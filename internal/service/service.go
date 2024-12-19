@@ -67,6 +67,9 @@ func (s *Service) loop(ctx context.Context) error {
 		if err = s.processMessage(ctx, message); err != nil {
 			return fmt.Errorf("s.processMessage: %w", err)
 		}
+		if err := s.storage.SetHandledMessage(ctx, message.ID); err != nil {
+			return fmt.Errorf("s.storage.SetHandledMessage: %w", err)
+		}
 	}
 
 	return nil

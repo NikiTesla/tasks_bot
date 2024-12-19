@@ -1,5 +1,7 @@
 package domain
 
 type Message struct {
-	text string
+	ID        int
+	Text      string
+	IsHandled bool
 }

@@ -3,6 +3,10 @@ package domain
 type Stage int
 
 const (
-	Initial Stage = iota
-	WaitingForAnswer
+	Unknown Stage = iota
+	Default
+	BecomeExecutor
+	BecomeObserver
+	BecomeChief
+	BecomeAdmin
 )

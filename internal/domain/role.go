@@ -3,7 +3,8 @@ package domain
 type Role int
 
 const (
-	Executor Role = iota
+	UnknownRole Role = iota
+	Executor
 	Observer
 	Chief
 	Admin
@@ -12,14 +13,16 @@ const (
 func (r Role) String() string {
 	switch r {
 	case Executor:
-		return "executor"
+		return "исполнитель"
 	case Observer:
-		return "observer"
+		return "наблюдатель"
 	case Chief:
-		return "chief"
+		return "шеф"
 	case Admin:
-		return "admin"
+		return "админ"
+	case UnknownRole:
+		return "неизвестно"
 	default:
-		return ""
+		return "неизвестно"
 	}
 }

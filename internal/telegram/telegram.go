@@ -11,10 +11,18 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	workersAmount = 100
+)
+
+var (
+	observerPasswordHash []byte
+	executorPasswordHash []byte
+	chiefPasswordHash    []byte
+	adminPasswordHash    []byte
 )
 
 type Bot struct {
@@ -42,6 +50,9 @@ func NewBot(logger *log.Entry, storage repository.Storage) *Bot {
 	if err := createAdminChat(storage); err != nil {
 		log.WithError(err).Warn("Failed to create admin chat. Entering no admin mode")
 	}
+	if err := setPasswords(); err != nil {
+		log.WithError(err).Error("failed to set passwords")
+	}
 
 	return &Bot{
 		bot:     bot,
@@ -61,6 +72,26 @@ func createAdminChat(db repository.Storage) error {
 	}
 	if err := db.AddChat(context.Background(), adminID, "admin", domain.Admin); err != nil {
 		return fmt.Errorf("db.AddChat: %w", err)
+	}
+	return nil
+}
+
+func setPasswords() (err error) {
+	observerPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("OBSERVER_PASSWORD_HASH")), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("generate observer password hash, err: %w", err)
+	}
+	chiefPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("CHIEF_PASSWORD_HASH")), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("generate chief password hash, err: %w", err)
+	}
+	executorPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("EXECUTOR_PASSWORD_HASH")), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("generate executor password hash, err: %w", err)
+	}
+	adminPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("ADMIN_PASSWORD_HASH")), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("generate admin password hash, err: %w", err)
 	}
 	return nil
 }
