@@ -1,0 +1,14 @@
+services:
+  tasks_bot:
+    container_name: tasks_bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+    - data-volume:/app/data
+    ports:
+    - 8888:8080
+    restart: unless-stopped
+
+volumes:
+  data-volume:

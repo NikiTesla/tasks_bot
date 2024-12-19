@@ -1,0 +1,19 @@
+# Parameters descriptions
+# https://vektra.github.io/mockery/v2.49/configuration/#parameter-descriptions
+#
+# Example
+# https://vektra.github.io/mockery/v2.49/features/#examples
+issue-845-fix: true
+with-expecter: true
+# To put all mocks in one place.
+# dir: "mocks/{{.PackageName}}"
+# To put mocks near to Mocked interface.
+dir: "{{.InterfaceDir}}/mocks"
+filename: "{{.InterfaceNameLower}}.go"
+mockname: "{{.InterfaceNameCamel}}"
+outpkg: "mocks"
+packages:
+  tasks_bot/internal/storage:
+    interfaces:
+      Storage:
+
