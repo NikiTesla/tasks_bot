@@ -9,4 +9,10 @@ const (
 	BecomeObserver
 	BecomeChief
 	BecomeAdmin
+	AddTaskName
+	AddTaskUser
+	AddTaskDeadline
+	MarkTaskAsDone
+	MarkTaskAsClosed
+	ChangeDeadline
 )

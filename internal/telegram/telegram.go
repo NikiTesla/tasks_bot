@@ -144,9 +144,9 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 			}
 
 			if update.Message.IsCommand() {
-				tasksCh <- func() { b.handleCommand(update.Message) }
+				tasksCh <- func() { b.handleCommand(ctx, update.Message) }
 			} else {
-				tasksCh <- func() { b.handleMessage(update.Message) }
+				tasksCh <- func() { b.handleMessage(ctx, update.Message) }
 			}
 		}
 	}

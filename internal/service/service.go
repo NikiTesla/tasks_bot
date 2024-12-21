@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"tasks_bot/internal/domain"
 	"tasks_bot/internal/reconciler"
 	"tasks_bot/internal/repository"
 	"tasks_bot/internal/telegram"
@@ -58,25 +57,42 @@ func (s *Service) Close() {
 func (s *Service) loop(ctx context.Context) error {
 	s.logger.Debug("loop function started")
 
+	if err := s.processMessages(ctx); err != nil {
+		return fmt.Errorf("s.processMessages: %s", err)
+	}
+
+	if err := s.processExpiredTasks(ctx); err != nil {
+		return fmt.Errorf("s.processExpiredTasks: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) processMessages(ctx context.Context) error {
 	messages, err := s.storage.RetrieveMessages(ctx)
 	if err != nil {
 		return fmt.Errorf("n.db.RetrieveMessages: %w", err)
 	}
 
 	for _, message := range messages {
-		if err = s.processMessage(ctx, message); err != nil {
-			return fmt.Errorf("s.processMessage: %w", err)
-		}
+		s.logger.Infof("message processed: %+v", message)
+
 		if err := s.storage.SetHandledMessage(ctx, message.ID); err != nil {
 			return fmt.Errorf("s.storage.SetHandledMessage: %w", err)
 		}
 	}
-
 	return nil
 }
 
-func (s *Service) processMessage(_ context.Context, message domain.Message) error {
-	s.logger.Infof("message %+v", message)
-
+func (s *Service) processExpiredTasks(ctx context.Context) error {
+	tasks, err := s.storage.GetExpiredTasks(ctx)
+	if err != nil {
+		return fmt.Errorf("s.storage.GetExpiredTasks: %w", err)
+	}
+	for _, task := range tasks {
+		if err := s.bot.NotifyObservers(ctx, task); err != nil {
+			return fmt.Errorf("s.bot.NotifyObservers: %w", err)
+		}
+	}
 	return nil
 }
