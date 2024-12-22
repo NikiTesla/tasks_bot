@@ -261,7 +261,14 @@ func (b *Bot) handleGetSelfTasksCommand(ctx context.Context, message *tgbotapi.M
 		}
 	}()
 
-	tasks, err := b.storage.GetUserTasks(ctx, message.Chat.UserName)
+	// chat, err := b.storage.GetChat(ctx, message.Chat.UserName, "")
+	// if err != nil {
+	// 	logger.WithError(err).Error("failed to get user's chat")
+	// 	responseMsg.Text = errorReponse
+	// 	return
+	// }
+
+	tasks, err := b.storage.GetUserTasks(ctx, message.Chat.UserName, "")
 	if err != nil && !errors.Is(err, errs.ErrNotFound) {
 		logger.WithError(err).Error("failed to get user's tasks")
 		responseMsg.Text = errorReponse

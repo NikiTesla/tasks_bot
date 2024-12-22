@@ -9,6 +9,8 @@ function log {
     printf "$(date +"%Y-%m-%d %H:%M:%S") level=$level msg=$msg\n"
 }
 
+migrate -path ./migrations/postgres -database postgres://krechetov:pass@localhost:5432/tasks?sslmode=disable up
+
 log info "removing previous build (containers, images)"
 for container_id in $(docker ps -a | grep $APP_LABEL | awk '{print $1}'); do 
     docker stop $container_id || true

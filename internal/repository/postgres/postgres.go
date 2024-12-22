@@ -247,8 +247,11 @@ func (p *Writable) GetExpiredTasksToMark(ctx context.Context) ([]domain.Task, er
 	return tasks, nil
 }
 
-func (p *Writable) GetUserTasks(ctx context.Context, username string) ([]domain.Task, error) {
-	queriesTasks, err := queries.New(p.db).GetUserTasks(ctx, username)
+func (p *Writable) GetUserTasks(ctx context.Context, username, phone string) ([]domain.Task, error) {
+	queriesTasks, err := queries.New(p.db).GetUserTasks(ctx, &queries.GetUserTasksParams{
+		ExecutorContact:   username,
+		ExecutorContact_2: phone,
+	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errs.ErrNotFound

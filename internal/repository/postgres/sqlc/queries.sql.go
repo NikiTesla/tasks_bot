@@ -378,11 +378,16 @@ func (q *Queries) GetTaskInProgress(ctx context.Context, chatID int64) (*TasksIn
 }
 
 const getUserTasks = `-- name: GetUserTasks :many
-SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired, created_at FROM tasks WHERE executor_contact = $1
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired, created_at FROM tasks WHERE executor_contact = $1 or executor_contact = $2
 `
 
-func (q *Queries) GetUserTasks(ctx context.Context, executorContact string) ([]*Task, error) {
-	rows, err := q.db.Query(ctx, getUserTasks, executorContact)
+type GetUserTasksParams struct {
+	ExecutorContact   string `json:"executor_contact"`
+	ExecutorContact_2 string `json:"executor_contact_2"`
+}
+
+func (q *Queries) GetUserTasks(ctx context.Context, arg *GetUserTasksParams) ([]*Task, error) {
+	rows, err := q.db.Query(ctx, getUserTasks, arg.ExecutorContact, arg.ExecutorContact_2)
 	if err != nil {
 		return nil, err
 	}

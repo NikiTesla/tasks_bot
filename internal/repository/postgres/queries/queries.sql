@@ -39,7 +39,7 @@ SELECT * FROM tasks WHERE done = true;
 SELECT * FROM tasks WHERE closed = true;
 
 -- name: GetUserTasks :many
-SELECT * FROM tasks WHERE executor_contact = $1;
+SELECT * FROM tasks WHERE executor_contact = $1 or executor_contact = $2;
 
 -- name: AddTask :one
 INSERT INTO tasks (title, executor_contact, executor_chat_id, deadline, done, closed, expired) VALUES ($1, $2, $3, $4, false, false, false) RETURNING id;

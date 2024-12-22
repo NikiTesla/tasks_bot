@@ -225,13 +225,13 @@ func (ms *MemoryStorage) GetClosedTasks(ctx context.Context) ([]domain.Task, err
 	return tasks, nil
 }
 
-func (ms *MemoryStorage) GetUserTasks(ctx context.Context, username string) ([]domain.Task, error) {
+func (ms *MemoryStorage) GetUserTasks(ctx context.Context, username, phone string) ([]domain.Task, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
 	tasks := make([]domain.Task, 0, len(ms.tasks))
 	for _, task := range ms.tasks {
-		if task.ExecutorContact == username {
+		if task.ExecutorContact == username || task.ExecutorContact == phone {
 			tasks = append(tasks, task)
 		}
 	}

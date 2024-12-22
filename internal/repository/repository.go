@@ -11,7 +11,7 @@ import (
 
 func NewStorage(ctx context.Context, cfg *config.Config) (Storage, error) {
 	if cfg.Local {
-		return NewMemoryStorage(ctx)
+		return NewSQLiteStorage(ctx, cfg.PostgresConfig.DSN)
 	}
 	postgres, err := postgres.NewWritable(ctx, cfg.PostgresConfig)
 	if err != nil {
@@ -46,7 +46,7 @@ type Storage interface {
 	GetDoneTasks(ctx context.Context) ([]domain.Task, error)
 	GetExpiredTasks(ctx context.Context) ([]domain.Task, error)
 	GetExpiredTasksToMark(ctx context.Context) ([]domain.Task, error)
-	GetUserTasks(ctx context.Context, username string) ([]domain.Task, error)
+	GetUserTasks(ctx context.Context, username, phone string) ([]domain.Task, error)
 	MarkTaskAsDone(ctx context.Context, taskID int) error
 	MarkTaskAsClosed(ctx context.Context, taskID int) error
 	DeleteTask(ctx context.Context, taskID int) error

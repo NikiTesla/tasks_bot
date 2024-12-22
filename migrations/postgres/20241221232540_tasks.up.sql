@@ -1,5 +1,5 @@
 -- Schema for chats table
-CREATE TABLE chats (
+CREATE TABLE IF NOT EXISTS chats (
     chat_id BIGINT PRIMARY KEY,
     username TEXT UNIQUE,
     phone TEXT UNIQUE,
@@ -9,7 +9,7 @@ CREATE TABLE chats (
 );
 
 -- Schema for tasks table
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     executor_contact TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE tasks (
 );
 
 -- Schema for tasks_in_progress table
-CREATE TABLE tasks_in_progress (
+CREATE TABLE IF NOT EXISTS tasks_in_progress (
     chat_id BIGINT PRIMARY KEY,
     title TEXT,
     executor_contact TEXT,

@@ -8,7 +8,6 @@ import (
 	"tasks_bot/internal/telegram"
 	"time"
 
-	"net/http"
 	_ "net/http/pprof"
 
 	log "github.com/sirupsen/logrus"
@@ -54,13 +53,13 @@ func (s *Service) Start(ctx context.Context) error {
 		return nil
 	})
 
-	eg.Go(func() error {
-		s.logger.Info("Starting pprof server on :6060")
-		if err := http.ListenAndServe(":6060", nil); err != nil {
-			return fmt.Errorf("pprof server failed: %v", err)
-		}
-		return nil
-	})
+	// eg.Go(func() error {
+	// 	s.logger.Info("Starting pprof server on :6060")
+	// 	if err := http.ListenAndServe(":6060", nil); err != nil {
+	// 		return fmt.Errorf("pprof server failed: %v", err)
+	// 	}
+	// 	return nil
+	// })
 
 	return eg.Wait()
 }

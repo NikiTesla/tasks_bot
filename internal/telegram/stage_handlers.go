@@ -20,22 +20,22 @@ func (b *Bot) handleUnknownStage(ctx context.Context, message *tgbotapi.Message)
 	logger := b.logger.WithField("chatID", message.Chat.ID)
 
 	var phone string
-	if message.Contact == nil {
-		contactButton := tgbotapi.KeyboardButton{
-			Text:           "Поделиться номером телефона",
-			RequestContact: true,
-		}
-		msg := tgbotapi.NewMessage(message.Chat.ID, "Пожалуйста поделитесь своим номером телефона. Это можно сделать с помощью соответствующего пункта в меню")
-		msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(
-			tgbotapi.NewKeyboardButtonRow(contactButton),
-		)
-		if _, err := b.bot.Send(msg); err != nil {
-			logger.WithError(err).Error("failed to send button request")
-			return
-		}
-	} else {
-		phone = message.Contact.PhoneNumber
-	}
+	// if message.Contact == nil {
+	// 	contactButton := tgbotapi.KeyboardButton{
+	// 		Text:           "Поделиться номером телефона",
+	// 		RequestContact: true,
+	// 	}
+	// 	msg := tgbotapi.NewMessage(message.Chat.ID, "Пожалуйста поделитесь своим номером телефона. Это можно сделать с помощью соответствующего пункта в меню")
+	// 	msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(
+	// 		tgbotapi.NewKeyboardButtonRow(contactButton),
+	// 	)
+	// 	if _, err := b.bot.Send(msg); err != nil {
+	// 		logger.WithError(err).Error("failed to send button request")
+	// 		return
+	// 	}
+	// } else {
+	// 	phone = message.Contact.PhoneNumber
+	// }
 
 	role, err := b.storage.GetRole(ctx, message.Chat.ID)
 	if err != nil && !errors.Is(err, errs.ErrNotFound) {
@@ -45,17 +45,20 @@ func (b *Bot) handleUnknownStage(ctx context.Context, message *tgbotapi.Message)
 		logger.WithError(err).Error("failed to update chat info with phone number")
 		return
 	}
-
-	// setting stage either to get phone number and save or default stage to continue work with bot
-	if message.Contact == nil {
-		if err := b.storage.SetStage(ctx, message.Chat.ID, domain.ContactRequest); err != nil && !errors.Is(err, errs.ErrNotFound) {
-			logger.WithError(err).Error("failed to set contact request stage")
-		}
-	} else {
-		if err := b.storage.SetStage(ctx, message.Chat.ID, domain.Default); err != nil && !errors.Is(err, errs.ErrNotFound) {
-			logger.WithError(err).Error("failed to set contact request stage")
-		}
+	if err := b.storage.SetStage(ctx, message.Chat.ID, domain.Default); err != nil && !errors.Is(err, errs.ErrNotFound) {
+		logger.WithError(err).Error("failed to set contact request stage")
 	}
+
+	// // setting stage either to get phone number and save or default stage to continue work with bot
+	// if message.Contact == nil {
+	// 	if err := b.storage.SetStage(ctx, message.Chat.ID, domain.ContactRequest); err != nil && !errors.Is(err, errs.ErrNotFound) {
+	// 		logger.WithError(err).Error("failed to set contact request stage")
+	// 	}
+	// } else {
+	// 	if err := b.storage.SetStage(ctx, message.Chat.ID, domain.Default); err != nil && !errors.Is(err, errs.ErrNotFound) {
+	// 		logger.WithError(err).Error("failed to set contact request stage")
+	// 	}
+	// }
 }
 
 func (b *Bot) handleContactRequest(ctx context.Context, message *tgbotapi.Message) {
@@ -156,7 +159,7 @@ func (b *Bot) handleAddTaskStage(ctx context.Context, message *tgbotapi.Message,
 			responseMsg.Text = errorReponse
 			return
 		}
-		responseMsg.Text = "Введите ник исполнителя в формате @username или телефон в формате 79xxxxxxxxx"
+		responseMsg.Text = "Введите ник исполнителя в формате @username"
 
 	case domain.AddTaskUser:
 		nextStage = domain.AddTaskDeadline
