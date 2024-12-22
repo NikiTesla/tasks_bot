@@ -1,7 +1,8 @@
 -- Schema for chats table
 CREATE TABLE chats (
     chat_id BIGINT PRIMARY KEY,
-    username TEXT NOT NULL,
+    username TEXT UNIQUE,
+    phone TEXT UNIQUE,
     role INT DEFAULT 0,
     stage INT DEFAULT 0
 );
@@ -10,7 +11,8 @@ CREATE TABLE chats (
 CREATE TABLE tasks (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    executor TEXT NOT NULL,
+    executor_contact TEXT NOT NULL,
+    executor_chat_id BIGINT,
     deadline TIMESTAMP NOT NULL,
     done BOOLEAN NOT NULL DEFAULT FALSE,
     closed BOOLEAN NOT NULL DEFAULT FALSE,
@@ -21,6 +23,7 @@ CREATE TABLE tasks (
 CREATE TABLE tasks_in_progress (
     chat_id BIGINT PRIMARY KEY,
     title TEXT,
-    executor TEXT,
+    executor_contact TEXT,
+    executor_chat_id BIGINT,
     deadline TIMESTAMP
 );

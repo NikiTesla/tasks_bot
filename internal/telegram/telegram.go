@@ -3,8 +3,6 @@ package telegram
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
 	"sync"
 	"tasks_bot/internal/config"
 	"tasks_bot/internal/domain"
@@ -42,7 +40,7 @@ func NewBot(logger *log.Entry, storage repository.Storage, cfg *config.TelegramC
 	}
 	bot.Debug = cfg.Debug
 
-	if err := createAdminChat(storage); err != nil {
+	if err := createAdminChat(storage, cfg); err != nil {
 		log.WithError(err).Warn("Failed to create admin chat. Entering no admin mode")
 	}
 	if err := setPasswords(cfg); err != nil {
@@ -56,16 +54,8 @@ func NewBot(logger *log.Entry, storage repository.Storage, cfg *config.TelegramC
 	}
 }
 
-func createAdminChat(db repository.Storage) error {
-	adminIDRaw, ok := os.LookupEnv("ADMIN_ID")
-	if !ok {
-		return fmt.Errorf("ADMIN_ID env is not found. Enabling no admin mode")
-	}
-	adminID, err := strconv.ParseInt(adminIDRaw, 10, 64)
-	if err != nil {
-		return fmt.Errorf("ADMIN_ID env %s is invalid. Enabling no admin mode, err: %w", adminIDRaw, err)
-	}
-	if err := db.AddChat(context.Background(), adminID, "admin", domain.Admin); err != nil {
+func createAdminChat(db repository.Storage, cfg *config.TelegramConfig) error {
+	if err := db.AddChat(context.Background(), cfg.AdminID, cfg.AdminUsername, "-", domain.Admin); err != nil {
 		return fmt.Errorf("db.AddChat: %w", err)
 	}
 	return nil
@@ -84,7 +74,7 @@ func setPasswords(cfg *config.TelegramConfig) (err error) {
 	if err != nil {
 		return fmt.Errorf("generate executor password hash, err: %w", err)
 	}
-	adminPasswordHash, err = bcrypt.GenerateFromPassword([]byte(cfg.AdminID), bcrypt.DefaultCost)
+	adminPasswordHash, err = bcrypt.GenerateFromPassword([]byte(cfg.AdminPasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("generate admin password hash, err: %w", err)
 	}

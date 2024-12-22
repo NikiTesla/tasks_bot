@@ -11,23 +11,26 @@ import (
 type Chat struct {
 	ChatID   int64       `json:"chat_id"`
 	Username string      `json:"username"`
+	Phone    string      `json:"phone"`
 	Role     pgtype.Int4 `json:"role"`
 	Stage    pgtype.Int4 `json:"stage"`
 }
 
 type Task struct {
-	ID       int64            `json:"id"`
-	Title    string           `json:"title"`
-	Executor string           `json:"executor"`
-	Deadline pgtype.Timestamp `json:"deadline"`
-	Done     bool             `json:"done"`
-	Closed   bool             `json:"closed"`
-	Expired  bool             `json:"expired"`
+	ID              int64            `json:"id"`
+	Title           string           `json:"title"`
+	ExecutorContact string           `json:"executor_contact"`
+	ExecutorChatID  pgtype.Int8      `json:"executor_chat_id"`
+	Deadline        pgtype.Timestamp `json:"deadline"`
+	Done            bool             `json:"done"`
+	Closed          bool             `json:"closed"`
+	Expired         bool             `json:"expired"`
 }
 
 type TasksInProgress struct {
-	ChatID   int64            `json:"chat_id"`
-	Title    pgtype.Text      `json:"title"`
-	Executor pgtype.Text      `json:"executor"`
-	Deadline pgtype.Timestamp `json:"deadline"`
+	ChatID          int64            `json:"chat_id"`
+	Title           pgtype.Text      `json:"title"`
+	ExecutorContact pgtype.Text      `json:"executor_contact"`
+	ExecutorChatID  pgtype.Int8      `json:"executor_chat_id"`
+	Deadline        pgtype.Timestamp `json:"deadline"`
 }

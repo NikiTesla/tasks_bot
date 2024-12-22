@@ -25,7 +25,8 @@ type Storage interface {
 	DebugStorage(ctx context.Context) (string, error)
 
 	// chats
-	AddChat(ctx context.Context, chatID int64, username string, role domain.Role) error
+	AddChat(ctx context.Context, chatID int64, username, phone string, role domain.Role) error
+	GetChat(ctx context.Context, username, phone string) (*domain.Chat, error)
 
 	// role
 	GetRole(ctx context.Context, chatID int64) (domain.Role, error)
@@ -52,7 +53,7 @@ type Storage interface {
 
 	GetTaskInProgress(ctx context.Context, chatID int64) (domain.Task, error)
 	SetTaskInProgressName(ctx context.Context, chatID int64, name string) error
-	SetTaskInProgressUser(ctx context.Context, chatID int64, user string) error
+	SetTaskInProgressUser(ctx context.Context, chatID int64, userContact string, userChatID int64) error
 	SetTaskInProgressDeadline(ctx context.Context, chatID int64, deadline time.Time) error
 
 	// messages

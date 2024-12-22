@@ -18,42 +18,57 @@ const (
 type TaskStatus int
 
 type Task struct {
-	ID       int
-	Title    string
-	Executor string
-	Deadline time.Time
-	Done     bool
-	Expired  bool
-	Closed   bool
+	ID              int
+	Title           string
+	ExecutorContact string
+	ExecutorChatID  int64
+	Deadline        time.Time
+	Done            bool
+	Expired         bool
+	Closed          bool
 }
 
 func (t Task) String() string {
 	if t.Done || t.Closed {
-		return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн %s</b>\n<b>Статус:</b> %s\n<b>Исполнитель:</b> @%s",
+		return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн %s</b>\n<b>Статус:</b> %s\n<b>Исполнитель:</b> %s",
 			t.ID,
 			t.Title,
 			t.Deadline.Format(DeadlineLayout),
 			t.GetStatus(),
-			t.Executor,
+			formatExecutorContact(t.ExecutorContact),
 		)
 	}
 
 	if time.Now().After(t.Deadline) {
-		return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн:</b> %s\n<b>Статус:</b> %s\n<b>Исполнитель:</b> @%s",
+		return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн:</b> %s\n<b>Статус:</b> %s\n<b>Исполнитель:</b> %s",
 			t.ID,
 			t.Title,
 			t.Deadline.Format(DeadlineLayout),
 			ExpiredTask,
-			t.Executor,
+			formatExecutorContact(t.ExecutorContact),
 		)
 	}
-	return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн %s</b>\n<b>Статус:</b> %s\n<b>Исполнитель:</b> @%s",
+	return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн %s</b>\n<b>Статус:</b> %s\n<b>Исполнитель:</b> %s",
 		t.ID,
 		t.Title,
 		t.Deadline.Format(DeadlineLayout),
 		t.GetStatus(),
-		t.Executor,
+		formatExecutorContact(t.ExecutorContact),
 	)
+}
+
+// TODO fix
+func formatExecutorContact(contact string) string {
+	isNumber := true
+	for _, char := range contact {
+		if char < '0' || char > '9' {
+			isNumber = false
+		}
+	}
+	if !isNumber {
+		return fmt.Sprintf("@%s", contact)
+	}
+	return contact
 }
 
 func (t Task) GetStatus() TaskStatus {

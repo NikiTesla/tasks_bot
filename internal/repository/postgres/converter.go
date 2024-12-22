@@ -7,13 +7,14 @@ import (
 
 func TaskToDomain(task *queries.Task) domain.Task {
 	return domain.Task{
-		ID:       int(task.ID) + 1,
-		Title:    task.Title,
-		Executor: task.Executor,
-		Deadline: task.Deadline.Time,
-		Done:     task.Done,
-		Expired:  task.Expired,
-		Closed:   task.Closed,
+		ID:              int(task.ID) + 1,
+		Title:           task.Title,
+		ExecutorContact: task.ExecutorContact,
+		ExecutorChatID:  task.ExecutorChatID.Int64,
+		Deadline:        task.Deadline.Time,
+		Done:            task.Done,
+		Expired:         task.Expired,
+		Closed:          task.Closed,
 	}
 }
 

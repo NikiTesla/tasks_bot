@@ -28,3 +28,17 @@ func (b *Bot) NotifyObservers(ctx context.Context, task domain.Task, excludeChat
 
 	return nil
 }
+
+func (b *Bot) NotifyExecutor(ctx context.Context, createdTask domain.Task, excludeChatIDs ...int64) error {
+	if slices.Contains(excludeChatIDs, createdTask.ExecutorChatID) {
+		return nil
+	}
+	msg := tgbotapi.NewMessage(createdTask.ExecutorChatID,
+		fmt.Sprintf("Создана задача, в которой вы являетесь исполнителем: \n\n%s", createdTask.String()),
+	)
+	msg.ParseMode = tgbotapi.ModeHTML
+	if _, err := b.bot.Send(msg); err != nil {
+		return fmt.Errorf("b.bot.Send (%d): %w", msg.ChatID, err)
+	}
+	return nil
+}

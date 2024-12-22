@@ -38,10 +38,11 @@ func (p *Writable) DebugStorage(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (p *Writable) AddChat(ctx context.Context, chatID int64, username string, role domain.Role) error {
+func (p *Writable) AddChat(ctx context.Context, chatID int64, username, phone string, role domain.Role) error {
 	err := queries.New(p.db).AddChat(ctx, &queries.AddChatParams{
 		ChatID:   chatID,
 		Username: username,
+		Phone:    phone,
 		Role:     pgtype.Int4{Int32: int32(role), Valid: true},
 	})
 	if err != nil {
@@ -51,6 +52,25 @@ func (p *Writable) AddChat(ctx context.Context, chatID int64, username string, r
 		return fmt.Errorf("pgx.Query: %w", err)
 	}
 	return nil
+}
+
+func (p *Writable) GetChat(ctx context.Context, username, phone string) (*domain.Chat, error) {
+	chat, err := queries.New(p.db).GetChat(ctx, &queries.GetChatParams{
+		Phone:    phone,
+		Username: username,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errs.ErrNotFound
+		}
+		return nil, fmt.Errorf("pgx.Query: %w", err)
+	}
+	return &domain.Chat{
+		ID:       chat.ChatID,
+		Username: username,
+		Stage:    domain.Stage(chat.Stage.Int32),
+		Role:     domain.Role(chat.Role.Int32),
+	}, nil
 }
 
 func (p *Writable) GetRole(ctx context.Context, chatID int64) (domain.Role, error) {
@@ -120,9 +140,10 @@ func (p *Writable) GetObservers(ctx context.Context) (map[int64]*domain.Chat, er
 
 func (p *Writable) AddTask(ctx context.Context, task domain.Task) (int, error) {
 	taskID, err := queries.New(p.db).AddTask(ctx, &queries.AddTaskParams{
-		Title:    task.Title,
-		Executor: task.Executor,
-		Deadline: pgtype.Timestamp{Time: task.Deadline, Valid: true},
+		Title:           task.Title,
+		ExecutorContact: task.ExecutorContact,
+		ExecutorChatID:  pgtype.Int8{Int64: task.ExecutorChatID, Valid: true},
+		Deadline:        pgtype.Timestamp{Time: task.Deadline, Valid: true},
 	})
 	if err != nil {
 		return -1, fmt.Errorf("pgx.Query: %w", err)
@@ -286,9 +307,10 @@ func (p *Writable) GetTaskInProgress(ctx context.Context, chatID int64) (domain.
 		return domain.Task{}, fmt.Errorf("pgx.Query: %w", err)
 	}
 	return domain.Task{
-		Title:    queriesTaskInProgress.Title.String,
-		Executor: queriesTaskInProgress.Executor.String,
-		Deadline: queriesTaskInProgress.Deadline.Time,
+		Title:           queriesTaskInProgress.Title.String,
+		ExecutorContact: queriesTaskInProgress.ExecutorContact.String,
+		ExecutorChatID:  queriesTaskInProgress.ExecutorChatID.Int64,
+		Deadline:        queriesTaskInProgress.Deadline.Time,
 	}, nil
 }
 
@@ -306,10 +328,11 @@ func (p *Writable) SetTaskInProgressName(ctx context.Context, chatID int64, name
 	return nil
 }
 
-func (p *Writable) SetTaskInProgressUser(ctx context.Context, chatID int64, user string) error {
+func (p *Writable) SetTaskInProgressUser(ctx context.Context, chatID int64, userContact string, userChatID int64) error {
 	err := queries.New(p.db).SetTaskInProgressUser(ctx, &queries.SetTaskInProgressUserParams{
-		ChatID:   chatID,
-		Executor: pgtype.Text{String: user, Valid: true},
+		ChatID:          chatID,
+		ExecutorContact: pgtype.Text{String: userContact, Valid: true},
+		ExecutorChatID:  pgtype.Int8{Int64: userChatID, Valid: true},
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

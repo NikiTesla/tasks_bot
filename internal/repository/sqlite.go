@@ -47,7 +47,7 @@ func connectDB(ctx context.Context, dbFile string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (s *SQLiteStorage) AddChat(ctx context.Context, chatID int64, username string, role domain.Role) error {
+func (s *SQLiteStorage) AddChat(ctx context.Context, chatID int64, username, phone string, role domain.Role) error {
 	query := `INSERT INTO chats (id, username, step, is_admin) VALUES (?, ?, -1, ?) 
 		ON CONFLICT(id) DO UPDATE SET is_admin=excluded.is_admin, username=excluded.username, step=-1, correct_answers=0`
 	if _, err := s.db.ExecContext(ctx, query, chatID, username, role); err != nil {

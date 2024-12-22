@@ -21,13 +21,17 @@ func (b *Bot) handleStart(ctx context.Context, message *tgbotapi.Message) {
 		return
 	}
 
-	role, err := b.storage.GetRole(ctx, message.From.ID)
+	role, err := b.storage.GetRole(ctx, message.Chat.ID)
 	if err != nil && !errors.Is(err, errs.ErrNotFound) {
 		logger.WithError(err).Error("failed to get role")
 		return
 	}
 	if err := b.setCommands(ctx, message.Chat.ID, role); err != nil {
 		logger.WithError(err).Error("failed to set commands")
+	}
+
+	if role == domain.UnknownRole {
+		b.handleUnknownStage(ctx, message)
 	}
 }
 
@@ -195,9 +199,9 @@ func (b *Bot) handleGetDoneTasksCommand(ctx context.Context, message *tgbotapi.M
 		}
 	}()
 
-	tasks, err := b.storage.GetClosedTasks(ctx)
+	tasks, err := b.storage.GetDoneTasks(ctx)
 	if err != nil && !errors.Is(err, errs.ErrNotFound) {
-		logger.WithError(err).Error("failed to get closed tasks")
+		logger.WithError(err).Error("failed to get done tasks")
 		responseMsg.Text = errorReponse
 		return
 	}
@@ -265,7 +269,7 @@ func (b *Bot) handleGetSelfTasksCommand(ctx context.Context, message *tgbotapi.M
 	}
 
 	if len(tasks) == 0 {
-		responseMsg.Text = "Нет зыкрытых задач"
+		responseMsg.Text = "У вас пока нет задач"
 		return
 	}
 

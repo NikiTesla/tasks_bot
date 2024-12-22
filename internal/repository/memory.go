@@ -62,12 +62,13 @@ func (ms *MemoryStorage) SetRole(ctx context.Context, chatID int64, role domain.
 	return nil
 }
 
-func (ms *MemoryStorage) AddChat(ctx context.Context, chatID int64, username string, role domain.Role) error {
+func (ms *MemoryStorage) AddChat(ctx context.Context, chatID int64, username, phone string, role domain.Role) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
 	ms.chats[chatID] = &domain.Chat{
 		Username: username,
+		Phone:    phone,
 		Stage:    domain.Default,
 		Role:     role,
 	}
@@ -230,7 +231,7 @@ func (ms *MemoryStorage) GetUserTasks(ctx context.Context, username string) ([]d
 
 	tasks := make([]domain.Task, 0, len(ms.tasks))
 	for _, task := range ms.tasks {
-		if task.Executor == username {
+		if task.ExecutorContact == username {
 			tasks = append(tasks, task)
 		}
 	}
@@ -244,6 +245,19 @@ func (ms *MemoryStorage) AddTask(ctx context.Context, task domain.Task) (int, er
 	ms.tasks = append(ms.tasks, task)
 
 	return len(ms.tasks) + 1, nil
+}
+
+func (ms *MemoryStorage) GetChat(ctx context.Context, username, phone string) (*domain.Chat, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	var resultChat *domain.Chat
+	for _, chat := range ms.chats {
+		if chat.Username == username || chat.Phone == phone {
+			resultChat = chat
+		}
+	}
+	return resultChat, nil
 }
 
 func (ms *MemoryStorage) MarkTaskAsDone(ctx context.Context, taskID int) error {
@@ -305,12 +319,13 @@ func (ms *MemoryStorage) SetTaskInProgressName(ctx context.Context, chatID int64
 	return nil
 }
 
-func (ms *MemoryStorage) SetTaskInProgressUser(ctx context.Context, chatID int64, user string) error {
+func (ms *MemoryStorage) SetTaskInProgressUser(ctx context.Context, chatID int64, userContact string, userChatID int64) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
 	task := ms.tasksInProgress[chatID]
-	task.Executor = user
+	task.ExecutorContact = userContact
+	task.ExecutorChatID = userChatID
 	task.ID = len(ms.tasks) + 1
 	ms.tasksInProgress[chatID] = task
 

@@ -16,7 +16,8 @@ type Config struct {
 type TelegramConfig struct {
 	Debug                bool   `envconfig:"DEBUG" default:"false"`
 	APIToken             string `envconfig:"API_TOKEN" required:"true"`
-	AdminID              string `envconfig:"ADMIN_ID"`
+	AdminID              int64  `envconfig:"ADMIN_ID"`
+	AdminUsername        string `envconfig:"ADMIN_USERNAME"`
 	ChiefPasswordHash    string `envconfig:"CHIEF_PASSWORD_HASH"`
 	ExecutorPasswordHash string `envconfig:"EXECUTOR_PASSWORD_HASH"`
 	ObserverPasswordHash string `envconfig:"OBSERVER_PASSWORD_HASH"`

@@ -79,7 +79,7 @@ func (b *Bot) processExecutorCommands(ctx context.Context, message *tgbotapi.Mes
 	switch message.Command() {
 	case startCmd:
 		b.handleStart(ctx, message)
-	case becomeExecutorCmd, becomeAdminCmd, becomeChiefCmd, becomeObserverCmd:
+	case becomeAdminCmd, becomeChiefCmd, becomeObserverCmd:
 		b.handleBecomeCommand(ctx, message, message.Command())
 	case getRoleCmd:
 		b.handleGetRoleCommand(ctx, message)
@@ -97,7 +97,7 @@ func (b *Bot) processChiefCommands(ctx context.Context, message *tgbotapi.Messag
 	switch message.Command() {
 	case startCmd:
 		b.handleStart(ctx, message)
-	case becomeExecutorCmd, becomeAdminCmd, becomeChiefCmd, becomeObserverCmd:
+	case becomeExecutorCmd, becomeAdminCmd, becomeObserverCmd:
 		b.handleBecomeCommand(ctx, message, message.Command())
 	case getRoleCmd:
 		b.handleGetRoleCommand(ctx, message)
@@ -128,7 +128,7 @@ func (b *Bot) processObserverCommands(ctx context.Context, message *tgbotapi.Mes
 	switch message.Command() {
 	case startCmd:
 		b.handleStart(ctx, message)
-	case becomeExecutorCmd, becomeAdminCmd, becomeChiefCmd, becomeObserverCmd:
+	case becomeExecutorCmd, becomeAdminCmd, becomeChiefCmd:
 		b.handleBecomeCommand(ctx, message, message.Command())
 	case getRoleCmd:
 		b.handleGetRoleCommand(ctx, message)
@@ -162,7 +162,7 @@ func (b *Bot) processAdminCommands(ctx context.Context, message *tgbotapi.Messag
 	switch message.Command() {
 	case startCmd:
 		b.handleStart(ctx, message)
-	case becomeExecutorCmd, becomeAdminCmd, becomeChiefCmd, becomeObserverCmd:
+	case becomeExecutorCmd, becomeChiefCmd, becomeObserverCmd:
 		b.handleBecomeCommand(ctx, message, message.Command())
 	case getRoleCmd:
 		b.handleGetRoleCommand(ctx, message)

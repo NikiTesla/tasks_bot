@@ -12,32 +12,45 @@ import (
 )
 
 const addChat = `-- name: AddChat :exec
-INSERT INTO chats (chat_id, username, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
+INSERT INTO chats (chat_id, username, phone, role) VALUES ($1, $2, $3, $4) ON CONFLICT (chat_id)
+DO UPDATE SET username = COALESCE(NULLIF(EXCLUDED.username, ''), chats.username), phone = COALESCE(NULLIF(EXCLUDED.phone, ''), chats.phone)
 `
 
 type AddChatParams struct {
 	ChatID   int64       `json:"chat_id"`
 	Username string      `json:"username"`
+	Phone    string      `json:"phone"`
 	Role     pgtype.Int4 `json:"role"`
 }
 
 func (q *Queries) AddChat(ctx context.Context, arg *AddChatParams) error {
-	_, err := q.db.Exec(ctx, addChat, arg.ChatID, arg.Username, arg.Role)
+	_, err := q.db.Exec(ctx, addChat,
+		arg.ChatID,
+		arg.Username,
+		arg.Phone,
+		arg.Role,
+	)
 	return err
 }
 
 const addTask = `-- name: AddTask :one
-INSERT INTO tasks (title, executor, deadline, done, closed, expired) VALUES ($1, $2, $3, false, false, false) RETURNING id
+INSERT INTO tasks (title, executor_contact, executor_chat_id, deadline, done, closed, expired) VALUES ($1, $2, $3, $4, false, false, false) RETURNING id
 `
 
 type AddTaskParams struct {
-	Title    string           `json:"title"`
-	Executor string           `json:"executor"`
-	Deadline pgtype.Timestamp `json:"deadline"`
+	Title           string           `json:"title"`
+	ExecutorContact string           `json:"executor_contact"`
+	ExecutorChatID  pgtype.Int8      `json:"executor_chat_id"`
+	Deadline        pgtype.Timestamp `json:"deadline"`
 }
 
 func (q *Queries) AddTask(ctx context.Context, arg *AddTaskParams) (int64, error) {
-	row := q.db.QueryRow(ctx, addTask, arg.Title, arg.Executor, arg.Deadline)
+	row := q.db.QueryRow(ctx, addTask,
+		arg.Title,
+		arg.ExecutorContact,
+		arg.ExecutorChatID,
+		arg.Deadline,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -58,7 +71,7 @@ func (q *Queries) ChangeTaskDeadline(ctx context.Context, arg *ChangeTaskDeadlin
 }
 
 const getAllTasks = `-- name: GetAllTasks :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks
 `
 
 func (q *Queries) GetAllTasks(ctx context.Context) ([]*Task, error) {
@@ -73,7 +86,8 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]*Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -89,8 +103,30 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]*Task, error) {
 	return items, nil
 }
 
+const getChat = `-- name: GetChat :one
+SELECT chat_id, username, phone, role, stage FROM chats WHERE username = $1 OR phone = $2
+`
+
+type GetChatParams struct {
+	Username string `json:"username"`
+	Phone    string `json:"phone"`
+}
+
+func (q *Queries) GetChat(ctx context.Context, arg *GetChatParams) (*Chat, error) {
+	row := q.db.QueryRow(ctx, getChat, arg.Username, arg.Phone)
+	var i Chat
+	err := row.Scan(
+		&i.ChatID,
+		&i.Username,
+		&i.Phone,
+		&i.Role,
+		&i.Stage,
+	)
+	return &i, err
+}
+
 const getClosedTasks = `-- name: GetClosedTasks :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks WHERE closed = true
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks WHERE closed = true
 `
 
 func (q *Queries) GetClosedTasks(ctx context.Context) ([]*Task, error) {
@@ -105,7 +141,8 @@ func (q *Queries) GetClosedTasks(ctx context.Context) ([]*Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -122,7 +159,7 @@ func (q *Queries) GetClosedTasks(ctx context.Context) ([]*Task, error) {
 }
 
 const getDoneTasks = `-- name: GetDoneTasks :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks WHERE done = true
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks WHERE done = true
 `
 
 func (q *Queries) GetDoneTasks(ctx context.Context) ([]*Task, error) {
@@ -137,7 +174,8 @@ func (q *Queries) GetDoneTasks(ctx context.Context) ([]*Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -154,7 +192,7 @@ func (q *Queries) GetDoneTasks(ctx context.Context) ([]*Task, error) {
 }
 
 const getExpiredTasks = `-- name: GetExpiredTasks :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks WHERE expired = true
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks WHERE expired = true
 `
 
 func (q *Queries) GetExpiredTasks(ctx context.Context) ([]*Task, error) {
@@ -169,7 +207,8 @@ func (q *Queries) GetExpiredTasks(ctx context.Context) ([]*Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -186,7 +225,7 @@ func (q *Queries) GetExpiredTasks(ctx context.Context) ([]*Task, error) {
 }
 
 const getExpiredTasksToMark = `-- name: GetExpiredTasksToMark :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks WHERE done = false AND expired = false AND deadline < (NOW() AT TIME ZONE 'UTC-3') FOR UPDATE
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks WHERE done = false AND expired = false AND deadline < (NOW() AT TIME ZONE 'UTC-3') FOR UPDATE
 `
 
 func (q *Queries) GetExpiredTasksToMark(ctx context.Context) ([]*Task, error) {
@@ -201,7 +240,8 @@ func (q *Queries) GetExpiredTasksToMark(ctx context.Context) ([]*Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -218,7 +258,7 @@ func (q *Queries) GetExpiredTasksToMark(ctx context.Context) ([]*Task, error) {
 }
 
 const getObservers = `-- name: GetObservers :many
-SELECT chat_id, username, role, stage FROM chats WHERE role = 2
+SELECT chat_id, username, phone, role, stage FROM chats WHERE role = 2
 `
 
 func (q *Queries) GetObservers(ctx context.Context) ([]*Chat, error) {
@@ -233,6 +273,7 @@ func (q *Queries) GetObservers(ctx context.Context) ([]*Chat, error) {
 		if err := rows.Scan(
 			&i.ChatID,
 			&i.Username,
+			&i.Phone,
 			&i.Role,
 			&i.Stage,
 		); err != nil {
@@ -247,7 +288,7 @@ func (q *Queries) GetObservers(ctx context.Context) ([]*Chat, error) {
 }
 
 const getOpenTasks = `-- name: GetOpenTasks :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks WHERE closed = false
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks WHERE closed = false
 `
 
 func (q *Queries) GetOpenTasks(ctx context.Context) ([]*Task, error) {
@@ -262,7 +303,8 @@ func (q *Queries) GetOpenTasks(ctx context.Context) ([]*Task, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -301,7 +343,7 @@ func (q *Queries) GetStage(ctx context.Context, chatID int64) (pgtype.Int4, erro
 }
 
 const getTaskInProgress = `-- name: GetTaskInProgress :one
-SELECT chat_id, title, executor, deadline FROM tasks_in_progress WHERE chat_id = $1
+SELECT chat_id, title, executor_contact, executor_chat_id, deadline FROM tasks_in_progress WHERE chat_id = $1
 `
 
 func (q *Queries) GetTaskInProgress(ctx context.Context, chatID int64) (*TasksInProgress, error) {
@@ -310,18 +352,19 @@ func (q *Queries) GetTaskInProgress(ctx context.Context, chatID int64) (*TasksIn
 	err := row.Scan(
 		&i.ChatID,
 		&i.Title,
-		&i.Executor,
+		&i.ExecutorContact,
+		&i.ExecutorChatID,
 		&i.Deadline,
 	)
 	return &i, err
 }
 
 const getUserTasks = `-- name: GetUserTasks :many
-SELECT id, title, executor, deadline, done, closed, expired FROM tasks WHERE executor = $1
+SELECT id, title, executor_contact, executor_chat_id, deadline, done, closed, expired FROM tasks WHERE executor_contact = $1
 `
 
-func (q *Queries) GetUserTasks(ctx context.Context, executor string) ([]*Task, error) {
-	rows, err := q.db.Query(ctx, getUserTasks, executor)
+func (q *Queries) GetUserTasks(ctx context.Context, executorContact string) ([]*Task, error) {
+	rows, err := q.db.Query(ctx, getUserTasks, executorContact)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +375,8 @@ func (q *Queries) GetUserTasks(ctx context.Context, executor string) ([]*Task, e
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Executor,
+			&i.ExecutorContact,
+			&i.ExecutorChatID,
 			&i.Deadline,
 			&i.Done,
 			&i.Closed,
@@ -443,16 +487,17 @@ func (q *Queries) SetTaskInProgressName(ctx context.Context, arg *SetTaskInProgr
 }
 
 const setTaskInProgressUser = `-- name: SetTaskInProgressUser :exec
-INSERT INTO tasks_in_progress (chat_id, executor) VALUES ($1, $2) 
-ON CONFLICT (chat_id) DO UPDATE SET executor = EXCLUDED.executor
+INSERT INTO tasks_in_progress (chat_id, executor_contact, executor_chat_id) VALUES ($1, $2, $3) 
+ON CONFLICT (chat_id) DO UPDATE SET executor_contact = EXCLUDED.executor_contact, executor_chat_id = EXCLUDED.executor_chat_id
 `
 
 type SetTaskInProgressUserParams struct {
-	ChatID   int64       `json:"chat_id"`
-	Executor pgtype.Text `json:"executor"`
+	ChatID          int64       `json:"chat_id"`
+	ExecutorContact pgtype.Text `json:"executor_contact"`
+	ExecutorChatID  pgtype.Int8 `json:"executor_chat_id"`
 }
 
 func (q *Queries) SetTaskInProgressUser(ctx context.Context, arg *SetTaskInProgressUserParams) error {
-	_, err := q.db.Exec(ctx, setTaskInProgressUser, arg.ChatID, arg.Executor)
+	_, err := q.db.Exec(ctx, setTaskInProgressUser, arg.ChatID, arg.ExecutorContact, arg.ExecutorChatID)
 	return err
 }

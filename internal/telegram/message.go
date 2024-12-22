@@ -16,28 +16,22 @@ const (
 
 // TODO add context to handlers
 func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) {
+	logger := b.logger.WithField("chatID", message.Chat.ID)
+
 	stage, err := b.storage.GetStage(ctx, message.Chat.ID)
 	if err != nil {
 		if !errors.Is(err, errs.ErrNotFound) {
-			b.logger.WithError(err).Error("failed to get stage")
+			logger.WithError(err).Error("failed to get stage")
 			return
 		}
 	}
 
 	switch stage {
 	case domain.Unknown:
-		role, err := b.storage.GetRole(ctx, message.Chat.ID)
-		if err != nil {
-			if !errors.Is(err, errs.ErrNotFound) {
-				b.logger.WithError(err).Error("b.storage.GetRole: %w", err)
-			}
-		}
+		b.handleUnknownStage(ctx, message)
 
-		if err := b.storage.AddChat(ctx, message.Chat.ID, message.Chat.UserName, role); err != nil {
-			b.logger.WithError(err).Error("failed to add chat")
-			return
-		}
-		b.handleStart(ctx, message)
+	case domain.ContactRequest:
+		b.handleContactRequest(ctx, message)
 
 	case domain.Default:
 		b.handleStart(ctx, message)

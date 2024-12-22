@@ -5,7 +5,11 @@ SELECT role FROM chats WHERE chat_id = $1;
 UPDATE chats SET role = $2 WHERE chat_id = $1;
 
 -- name: AddChat :exec
-INSERT INTO chats (chat_id, username, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING;
+INSERT INTO chats (chat_id, username, phone, role) VALUES ($1, $2, $3, $4) ON CONFLICT (chat_id)
+DO UPDATE SET username = COALESCE(NULLIF(EXCLUDED.username, ''), chats.username), phone = COALESCE(NULLIF(EXCLUDED.phone, ''), chats.phone);
+
+-- name: GetChat :one
+SELECT * FROM chats WHERE username = $1 OR phone = $2;
 
 -- name: GetObservers :many
 SELECT * FROM chats WHERE role = 2;
@@ -35,10 +39,10 @@ SELECT * FROM tasks WHERE done = true;
 SELECT * FROM tasks WHERE closed = true;
 
 -- name: GetUserTasks :many
-SELECT * FROM tasks WHERE executor = $1;
+SELECT * FROM tasks WHERE executor_contact = $1;
 
 -- name: AddTask :one
-INSERT INTO tasks (title, executor, deadline, done, closed, expired) VALUES ($1, $2, $3, false, false, false) RETURNING id;
+INSERT INTO tasks (title, executor_contact, executor_chat_id, deadline, done, closed, expired) VALUES ($1, $2, $3, $4, false, false, false) RETURNING id;
 
 -- name: MarkTaskAsDone :execrows
 UPDATE tasks SET done = true WHERE id = $1;
@@ -60,8 +64,8 @@ INSERT INTO tasks_in_progress (chat_id, title) VALUES ($1, $2)
 ON CONFLICT (chat_id) DO UPDATE SET title = EXCLUDED.title;
 
 -- name: SetTaskInProgressUser :exec
-INSERT INTO tasks_in_progress (chat_id, executor) VALUES ($1, $2) 
-ON CONFLICT (chat_id) DO UPDATE SET executor = EXCLUDED.executor;
+INSERT INTO tasks_in_progress (chat_id, executor_contact, executor_chat_id) VALUES ($1, $2, $3) 
+ON CONFLICT (chat_id) DO UPDATE SET executor_contact = EXCLUDED.executor_contact, executor_chat_id = EXCLUDED.executor_chat_id;
 
 -- name: SetTaskInProgressDeadline :exec
 INSERT INTO tasks_in_progress (chat_id, deadline) VALUES ($1, $2) 
