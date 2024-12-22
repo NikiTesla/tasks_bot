@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	Debug          bool            `envconfig:"DEBUG" default:"false"`
-	Local          bool            `envconfig:"LOCAL" default:"false"`
+	Local          bool            `envconfig:"LOCAL" default:"true"`
 	PostgresConfig *PostgresConfig `envconfig:"POSTGRES"`
 	TelegramConfig *TelegramConfig `envconfig:"TELEGRAM"`
 }

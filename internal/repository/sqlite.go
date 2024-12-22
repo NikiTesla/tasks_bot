@@ -37,8 +37,8 @@ func connectDB(ctx context.Context, dbFile string) (*sql.DB, error) {
 	_, err = db.ExecContext(ctx, `-- Schema for chats table
 CREATE TABLE IF NOT EXISTS chats (
 	chat_id INTEGER PRIMARY KEY,
-	username TEXT UNIQUE,
-	phone TEXT UNIQUE,
+	username TEXT,
+	phone TEXT,
 	role INTEGER DEFAULT 0,
 	stage INTEGER DEFAULT 0,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
