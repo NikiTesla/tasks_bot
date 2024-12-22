@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"tasks_bot/internal/config"
 	"tasks_bot/internal/reconciler"
 	"tasks_bot/internal/repository"
 	"tasks_bot/internal/service"
@@ -19,19 +20,23 @@ func main() {
 	if err := godotenv.Load(path.Join("./", ".env")); err != nil {
 		log.WithError(err).Warn("failed to load .env")
 	}
-	logger := createLogger()
+	cfg, err := config.Load()
+	if err != nil {
+		log.WithError(err).Fatal("failed to load config")
+	}
+	logger := createLogger(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	setSigintHandler(logger, cancel)
 
-	storage, err := repository.NewMemoryStorage(ctx)
+	storage, err := repository.NewStorage(ctx, cfg)
 	if err != nil {
 		logger.Fatalf("failed to create storage, err: %s", err)
 	}
 
 	service := service.New(
 		logger,
-		telegram.NewBot(logger, storage),
+		telegram.NewBot(logger, storage, cfg.TelegramConfig),
 		reconciler.New(logger),
 		storage,
 	)
@@ -41,9 +46,9 @@ func main() {
 	}
 }
 
-func createLogger() *log.Entry {
+func createLogger(cfg *config.Config) *log.Entry {
 	logger := log.NewEntry(log.StandardLogger())
-	if os.Getenv("DEBUG") == "true" {
+	if cfg.Debug {
 		logger.Logger.SetLevel(log.DebugLevel)
 	}
 	return logger

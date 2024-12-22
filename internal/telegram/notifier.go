@@ -6,7 +6,7 @@ import (
 	"slices"
 	"tasks_bot/internal/domain"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func (b *Bot) NotifyObservers(ctx context.Context, task domain.Task, excludeChatIDs ...int64) error {

@@ -6,10 +6,11 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"tasks_bot/internal/config"
 	"tasks_bot/internal/domain"
 	"tasks_bot/internal/repository"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,28 +30,22 @@ type Bot struct {
 	bot *tgbotapi.BotAPI
 
 	storage repository.Storage
+	cfg     *config.TelegramConfig
 
 	logger *log.Entry
 }
 
-func NewBot(logger *log.Entry, storage repository.Storage) *Bot {
-	botToken, ok := os.LookupEnv("TELEBOT_API")
-	if !ok {
-		log.Fatal("bot token is not presented")
-	}
-
-	bot, err := tgbotapi.NewBotAPI(botToken)
+func NewBot(logger *log.Entry, storage repository.Storage, cfg *config.TelegramConfig) *Bot {
+	bot, err := tgbotapi.NewBotAPI(cfg.APIToken)
 	if err != nil {
 		log.WithError(err).Fatal("can't create Bot API")
 	}
-	if os.Getenv("DEBUG") == "true" {
-		bot.Debug = true
-	}
+	bot.Debug = cfg.Debug
 
 	if err := createAdminChat(storage); err != nil {
 		log.WithError(err).Warn("Failed to create admin chat. Entering no admin mode")
 	}
-	if err := setPasswords(); err != nil {
+	if err := setPasswords(cfg); err != nil {
 		log.WithError(err).Error("failed to set passwords")
 	}
 
@@ -76,20 +71,20 @@ func createAdminChat(db repository.Storage) error {
 	return nil
 }
 
-func setPasswords() (err error) {
-	observerPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("OBSERVER_PASSWORD_HASH")), bcrypt.DefaultCost)
+func setPasswords(cfg *config.TelegramConfig) (err error) {
+	observerPasswordHash, err = bcrypt.GenerateFromPassword([]byte(cfg.ObserverPasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("generate observer password hash, err: %w", err)
 	}
-	chiefPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("CHIEF_PASSWORD_HASH")), bcrypt.DefaultCost)
+	chiefPasswordHash, err = bcrypt.GenerateFromPassword([]byte(cfg.ChiefPasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("generate chief password hash, err: %w", err)
 	}
-	executorPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("EXECUTOR_PASSWORD_HASH")), bcrypt.DefaultCost)
+	executorPasswordHash, err = bcrypt.GenerateFromPassword([]byte(cfg.ExecutorPasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("generate executor password hash, err: %w", err)
 	}
-	adminPasswordHash, err = bcrypt.GenerateFromPassword([]byte(os.Getenv("ADMIN_PASSWORD_HASH")), bcrypt.DefaultCost)
+	adminPasswordHash, err = bcrypt.GenerateFromPassword([]byte(cfg.AdminID), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("generate admin password hash, err: %w", err)
 	}
@@ -100,13 +95,8 @@ func (b *Bot) Start(ctx context.Context) error {
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 60
 
-	updateChannel, err := b.bot.GetUpdatesChan(updateConfig)
-	if err != nil {
-		return fmt.Errorf("cannot create update channel, err: %w", err)
-	}
-
 	log.Info("Bot is handling updates")
-	b.handleUpdates(ctx, updateChannel)
+	b.handleUpdates(ctx, b.bot.GetUpdatesChan(updateConfig))
 
 	return nil
 }

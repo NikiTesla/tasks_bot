@@ -6,9 +6,34 @@ services:
       dockerfile: Dockerfile
     volumes:
     - data-volume:/app/data
+    networks:
+      - tasks
     ports:
     - 8888:8080
+    - 6060:6060
     restart: unless-stopped
+    
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: krechetov
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: tasks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tasks
+    ports:
+      - "5432:5432"
+
+networks:
+  tasks:
+    driver: bridge
 
 volumes:
   data-volume:
+  postgres_data:

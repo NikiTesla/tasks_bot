@@ -19,7 +19,7 @@ type TaskStatus int
 
 type Task struct {
 	ID       int
-	Name     string
+	Title    string
 	Executor string
 	Deadline time.Time
 	Done     bool
@@ -31,7 +31,7 @@ func (t Task) String() string {
 	if t.Done || t.Closed {
 		return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн %s</b>\n<b>Статус:</b> %s\n<b>Исполнитель:</b> @%s",
 			t.ID,
-			t.Name,
+			t.Title,
 			t.Deadline.Format(DeadlineLayout),
 			t.GetStatus(),
 			t.Executor,
@@ -41,7 +41,7 @@ func (t Task) String() string {
 	if time.Now().After(t.Deadline) {
 		return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн:</b> %s\n<b>Статус:</b> %s\n<b>Исполнитель:</b> @%s",
 			t.ID,
-			t.Name,
+			t.Title,
 			t.Deadline.Format(DeadlineLayout),
 			ExpiredTask,
 			t.Executor,
@@ -49,7 +49,7 @@ func (t Task) String() string {
 	}
 	return fmt.Sprintf("<b>Задача №%d</b>\n<b>Название:</b> %s\n<b>Дедлайн %s</b>\n<b>Статус:</b> %s\n<b>Исполнитель:</b> @%s",
 		t.ID,
-		t.Name,
+		t.Title,
 		t.Deadline.Format(DeadlineLayout),
 		t.GetStatus(),
 		t.Executor,

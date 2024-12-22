@@ -8,6 +8,9 @@ import (
 	"tasks_bot/internal/telegram"
 	"time"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -30,6 +33,11 @@ func New(logger *log.Entry, bot *telegram.Bot, rec *reconciler.Reconciler, stora
 }
 
 func (s *Service) Start(ctx context.Context) error {
+	// Start pprof server
+	go func() {
+
+	}()
+
 	eg, ctx := errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
@@ -46,6 +54,14 @@ func (s *Service) Start(ctx context.Context) error {
 		return nil
 	})
 
+	eg.Go(func() error {
+		s.logger.Info("Starting pprof server on :6060")
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			return fmt.Errorf("pprof server failed: %v", err)
+		}
+		return nil
+	})
+
 	return eg.Wait()
 }
 
@@ -55,16 +71,12 @@ func (s *Service) Close() {
 }
 
 func (s *Service) loop(ctx context.Context) error {
-	s.logger.Debug("loop function started")
-
 	if err := s.processMessages(ctx); err != nil {
 		return fmt.Errorf("s.processMessages: %s", err)
 	}
-
 	if err := s.processExpiredTasks(ctx); err != nil {
 		return fmt.Errorf("s.processExpiredTasks: %w", err)
 	}
-
 	return nil
 }
 
@@ -85,7 +97,7 @@ func (s *Service) processMessages(ctx context.Context) error {
 }
 
 func (s *Service) processExpiredTasks(ctx context.Context) error {
-	tasks, err := s.storage.GetExpiredTasks(ctx)
+	tasks, err := s.storage.GetExpiredTasksToMark(ctx)
 	if err != nil {
 		return fmt.Errorf("s.storage.GetExpiredTasks: %w", err)
 	}

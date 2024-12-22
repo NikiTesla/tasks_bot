@@ -20,4 +20,4 @@ for docker_image in $(docker image ls | grep $APP_LABEL | awk '{print $3}'); do
 done
 
 log info "building and running"
-docker compose up -d
+docker compose up -d --build

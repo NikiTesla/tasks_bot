@@ -157,6 +157,19 @@ func (ms *MemoryStorage) GetAllTasks(ctx context.Context) ([]domain.Task, error)
 }
 
 func (ms *MemoryStorage) GetExpiredTasks(ctx context.Context) ([]domain.Task, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	tasks := make([]domain.Task, 0)
+	for _, task := range ms.tasks {
+		if !task.Done && task.Expired {
+			tasks = append(tasks, task)
+		}
+	}
+	return tasks, nil
+}
+
+func (ms *MemoryStorage) GetExpiredTasksToMark(ctx context.Context) ([]domain.Task, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -211,14 +224,26 @@ func (ms *MemoryStorage) GetClosedTasks(ctx context.Context) ([]domain.Task, err
 	return tasks, nil
 }
 
-func (ms *MemoryStorage) AddTask(ctx context.Context, task domain.Task) error {
+func (ms *MemoryStorage) GetUserTasks(ctx context.Context, username string) ([]domain.Task, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	tasks := make([]domain.Task, 0, len(ms.tasks))
+	for _, task := range ms.tasks {
+		if task.Executor == username {
+			tasks = append(tasks, task)
+		}
+	}
+	return tasks, nil
+}
+
+func (ms *MemoryStorage) AddTask(ctx context.Context, task domain.Task) (int, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	task.ID = len(ms.tasks) + 1
 	ms.tasks = append(ms.tasks, task)
 
-	return nil
+	return len(ms.tasks) + 1, nil
 }
 
 func (ms *MemoryStorage) MarkTaskAsDone(ctx context.Context, taskID int) error {
@@ -274,7 +299,7 @@ func (ms *MemoryStorage) SetTaskInProgressName(ctx context.Context, chatID int64
 
 	task := ms.tasksInProgress[chatID]
 	task.ID = len(ms.tasks) + 1
-	task.Name = name
+	task.Title = name
 	ms.tasksInProgress[chatID] = task
 
 	return nil
@@ -304,7 +329,7 @@ func (ms *MemoryStorage) SetTaskInProgressDeadline(ctx context.Context, chatID i
 	return nil
 }
 
-func (ms *MemoryStorage) DebugStorage(ctx context.Context) string {
+func (ms *MemoryStorage) DebugStorage(ctx context.Context) (string, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -328,7 +353,7 @@ func (ms *MemoryStorage) DebugStorage(ctx context.Context) string {
 		builder.WriteString(fmt.Sprintf("task in progress for chat %d: %s\n", chatID, task))
 	}
 
-	return builder.String()
+	return builder.String(), nil
 }
 
 func (ms *MemoryStorage) Close() {
