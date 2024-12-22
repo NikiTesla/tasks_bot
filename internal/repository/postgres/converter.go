@@ -21,7 +21,7 @@ func TaskToDomain(task *queries.Task) domain.Task {
 func ChatToDomain(chat *queries.Chat) *domain.Chat {
 	return &domain.Chat{
 		ID:       chat.ChatID,
-		Username: chat.Username,
+		Username: chat.Username.String,
 		Stage:    domain.Stage(chat.Stage.Int32),
 		Role:     domain.Role(chat.Role.Int32),
 	}

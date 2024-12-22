@@ -49,6 +49,7 @@ type Storage interface {
 	GetUserTasks(ctx context.Context, username string) ([]domain.Task, error)
 	MarkTaskAsDone(ctx context.Context, taskID int) error
 	MarkTaskAsClosed(ctx context.Context, taskID int) error
+	DeleteTask(ctx context.Context, taskID int) error
 	ChangeTaskDeadline(ctx context.Context, taskID int, newDeadline time.Time) error
 
 	GetTaskInProgress(ctx context.Context, chatID int64) (domain.Task, error)

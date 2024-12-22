@@ -25,7 +25,7 @@ func (b *Bot) handleUnknownStage(ctx context.Context, message *tgbotapi.Message)
 			Text:           "Поделиться номером телефона",
 			RequestContact: true,
 		}
-		msg := tgbotapi.NewMessage(message.Chat.ID, "Пожалуйста поделитесь своим номером телефона:")
+		msg := tgbotapi.NewMessage(message.Chat.ID, "Пожалуйста поделитесь своим номером телефона. Это можно сделать с помощью соответствующего пункта в меню")
 		msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(
 			tgbotapi.NewKeyboardButtonRow(contactButton),
 		)
@@ -163,14 +163,16 @@ func (b *Bot) handleAddTaskStage(ctx context.Context, message *tgbotapi.Message,
 		userContact := strings.Trim(message.Text, "@")
 
 		executorChat, err := b.storage.GetChat(ctx, userContact, userContact)
-		if err != nil {
-			if errors.Is(err, errs.ErrNotFound) {
-				responseMsg.Text = "Исполнитель не найден. Возможно, пользователь ещё не добавлен на платформу"
-			}
+		if err != nil && !errors.Is(err, errs.ErrNotFound) {
+			responseMsg.Text = errorReponse
 			logger.WithError(err).Error("failed to get chat")
 			return
 		}
-		if err = b.storage.SetTaskInProgressUser(ctx, message.Chat.ID, userContact, executorChat.ID); err != nil {
+		var chatID int64
+		if executorChat != nil {
+			chatID = executorChat.ID
+		}
+		if err = b.storage.SetTaskInProgressUser(ctx, message.Chat.ID, userContact, chatID); err != nil {
 			logger.WithError(err).Error("failed to set task in progress user for the chat")
 			responseMsg.Text = errorReponse
 			return
@@ -185,7 +187,9 @@ func (b *Bot) handleAddTaskStage(ctx context.Context, message *tgbotapi.Message,
 			responseMsg.Text = errorReponse
 			return
 		}
-		b.handleAddTaskDeadline(ctx, logger, message, &taskInProgress, &responseMsg)
+		if b.handleAddTaskDeadline(ctx, logger, message, &taskInProgress, &responseMsg) {
+			return
+		}
 	}
 
 	if err := b.storage.SetStage(ctx, message.Chat.ID, nextStage); err != nil && !errors.Is(err, errs.ErrNotFound) {
@@ -193,21 +197,23 @@ func (b *Bot) handleAddTaskStage(ctx context.Context, message *tgbotapi.Message,
 	}
 }
 
+// handleAddTaskDeadline parses deadline timestamp, creates task, notify observers and executor.
+// returns bool if external call should return after
 func (b *Bot) handleAddTaskDeadline(
 	ctx context.Context,
 	logger *log.Entry,
 	message *tgbotapi.Message,
 	taskInProgress *domain.Task,
 	responseMsg *tgbotapi.MessageConfig,
-) {
+) bool {
 	timestamp, err := time.ParseInLocation(domain.DeadlineLayout, message.Text, time.Local)
 	if err != nil {
 		responseMsg.Text = "Некорректный формат даты-времени, проверьте, что вы вводите дату и время в формате, похожем на 21.12.2024 12:20:00"
-		return
+		return true
 	}
 	if timestamp.Before(time.Now()) {
 		responseMsg.Text = "Некорректное время дедлайна. Убедитесь, что вы ввели время момента в будущем в качестве дедлайна"
-		return
+		return true
 	}
 	taskInProgress.Deadline = timestamp
 
@@ -215,7 +221,7 @@ func (b *Bot) handleAddTaskDeadline(
 	if err != nil {
 		logger.WithError(err).Error("failed to add task")
 		responseMsg.Text = errorReponse
-		return
+		return true
 	}
 	taskInProgress.ID = taskID
 
@@ -225,10 +231,15 @@ func (b *Bot) handleAddTaskDeadline(
 	if err := b.NotifyObservers(ctx, *taskInProgress, message.Chat.ID); err != nil {
 		logger.WithError(err).Error("failed to notify observers")
 	}
-	if err := b.NotifyExecutor(ctx, *taskInProgress, taskInProgress.ExecutorChatID); err != nil {
-		logger.WithError(err).Error("failed to notify executor")
+	// if executor's chat id set - send a notification about created task
+	if taskInProgress.ExecutorChatID != 0 {
+		if err := b.NotifyExecutor(ctx, *taskInProgress, message.Chat.ID); err != nil {
+			logger.WithError(err).Error("failed to notify executor")
+		}
 	}
+	return false
 }
+
 func (b *Bot) handleMarkTaskStage(ctx context.Context, message *tgbotapi.Message, stage domain.Stage) {
 	logger := b.logger.WithField("chatID", message.Chat.ID)
 
@@ -324,4 +335,34 @@ func (b *Bot) handleChangeDeadlineStage(ctx context.Context, message *tgbotapi.M
 
 	responseMsg.ParseMode = tgbotapi.ModeHTML
 	responseMsg.Text = fmt.Sprintf("Дедлайн задачи №%d успешно изменен на %s", taskID, deadline)
+}
+
+func (b *Bot) handleDeleteTaskStage(ctx context.Context, message *tgbotapi.Message) {
+	logger := b.logger.WithField("chatID", message.Chat.ID)
+
+	responseMsg := tgbotapi.NewMessage(message.Chat.ID, "")
+	defer func() {
+		if _, err := b.bot.Send(responseMsg); err != nil {
+			logger.WithError(err).Error("failed to send response")
+		}
+	}()
+
+	taskID, err := strconv.Atoi(message.Text)
+	if err != nil {
+		responseMsg.Text = "Некорректный номер задачи, должно быть число"
+		return
+	}
+
+	if err := b.storage.DeleteTask(ctx, taskID); err != nil {
+		logger.WithError(err).Error("b.storage.MarkTaskAsClosed")
+		responseMsg.Text = errorReponse
+		return
+	}
+	responseMsg.Text = "Задача успешно удалена"
+
+	if err := b.storage.SetStage(ctx, message.Chat.ID, domain.Default); err != nil && !errors.Is(err, errs.ErrNotFound) {
+		logger.WithError(err).Error("failed to set next stage")
+		responseMsg.Text = errorReponse
+		return
+	}
 }

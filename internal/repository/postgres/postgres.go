@@ -41,8 +41,8 @@ func (p *Writable) DebugStorage(ctx context.Context) (string, error) {
 func (p *Writable) AddChat(ctx context.Context, chatID int64, username, phone string, role domain.Role) error {
 	err := queries.New(p.db).AddChat(ctx, &queries.AddChatParams{
 		ChatID:   chatID,
-		Username: username,
-		Phone:    phone,
+		Username: pgtype.Text{String: username, Valid: true},
+		Phone:    pgtype.Text{String: phone, Valid: true},
 		Role:     pgtype.Int4{Int32: int32(role), Valid: true},
 	})
 	if err != nil {
@@ -56,8 +56,8 @@ func (p *Writable) AddChat(ctx context.Context, chatID int64, username, phone st
 
 func (p *Writable) GetChat(ctx context.Context, username, phone string) (*domain.Chat, error) {
 	chat, err := queries.New(p.db).GetChat(ctx, &queries.GetChatParams{
-		Phone:    phone,
-		Username: username,
+		Phone:    pgtype.Text{String: phone, Valid: true},
+		Username: pgtype.Text{String: username, Valid: true},
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -280,6 +280,14 @@ func (p *Writable) MarkTaskAsClosed(ctx context.Context, taskID int) error {
 	}
 	if affectedRows == 0 {
 		return errs.ErrNotFound
+	}
+	return nil
+}
+
+func (p *Writable) DeleteTask(ctx context.Context, taskID int) error {
+	err := queries.New(p.db).DeleteTask(ctx, int64(taskID-1))
+	if err != nil {
+		return fmt.Errorf("pgx.Query: %w", err)
 	}
 	return nil
 }

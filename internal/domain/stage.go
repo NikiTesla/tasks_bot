@@ -16,4 +16,5 @@ const (
 	MarkTaskAsClosed
 	ChangeDeadline
 	ContactRequest
+	DeleteTask
 )

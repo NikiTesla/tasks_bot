@@ -53,6 +53,9 @@ UPDATE tasks SET closed = true WHERE id = $1;
 -- name: MarkExpiredTask :execrows
 UPDATE tasks SET expired = true WHERE id = $1;
 
+-- name: DeleteTask :exec
+DELETE FROM tasks WHERE id = $1;
+
 -- name: ChangeTaskDeadline :exec
 UPDATE tasks SET deadline = $2, expired = false WHERE id = $1;
 
@@ -70,4 +73,3 @@ ON CONFLICT (chat_id) DO UPDATE SET executor_contact = EXCLUDED.executor_contact
 -- name: SetTaskInProgressDeadline :exec
 INSERT INTO tasks_in_progress (chat_id, deadline) VALUES ($1, $2) 
 ON CONFLICT (chat_id) DO UPDATE SET deadline = EXCLUDED.deadline;
-

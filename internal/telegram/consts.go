@@ -22,6 +22,7 @@ const (
 	getExpiredTasksCmd        = "get_expired_tasks"
 	markTaskAsDoneCommand     = "do_task"
 	markTaskAsClosedCommand   = "close_task"
+	deleteTaskCommand         = "delete_task"
 	changeTaskDeadlineCommand = "change_deadline"
 	// admin commands
 	healthCmd    = "healthz"
@@ -63,6 +64,7 @@ var role2commands = map[domain.Role][]tgbotapi.BotCommand{
 		{Command: getDoneTasks, Description: "Получить выполненные задачи"},
 		{Command: getClosedTasks, Description: "Получить закрытые задачи"},
 		{Command: markTaskAsClosedCommand, Description: "Закрыть задачу"},
+		{Command: deleteTaskCommand, Description: "Удалить задачу"},
 		{Command: markTaskAsDoneCommand, Description: "Отметить задачу выполненной"},
 		{Command: changeTaskDeadlineCommand, Description: "Изменить дедлайн задачи"},
 		{Command: becomeExecutorCmd, Description: "Стать исполнителем"},
@@ -77,6 +79,7 @@ var role2commands = map[domain.Role][]tgbotapi.BotCommand{
 		{Command: getDoneTasks, Description: "Получить выполненные задачи"},
 		{Command: getClosedTasks, Description: "Получить закрытые задачи"},
 		{Command: markTaskAsClosedCommand, Description: "Закрыть задачу"},
+		{Command: deleteTaskCommand, Description: "Удалить задачу"},
 		{Command: markTaskAsDoneCommand, Description: "Отметить задачу выполненной"},
 		{Command: changeTaskDeadlineCommand, Description: "Изменить дедлайн задачи"},
 		{Command: becomeExecutorCmd, Description: "Стать исполнителем"},

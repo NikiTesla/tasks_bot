@@ -45,6 +45,9 @@ func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) {
 	case domain.MarkTaskAsClosed, domain.MarkTaskAsDone:
 		b.handleMarkTaskStage(ctx, message, stage)
 
+	case domain.DeleteTask:
+		b.handleDeleteTaskStage(ctx, message)
+
 	case domain.ChangeDeadline:
 		b.handleChangeDeadlineStage(ctx, message)
 

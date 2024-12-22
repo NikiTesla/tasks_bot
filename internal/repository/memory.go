@@ -286,6 +286,19 @@ func (ms *MemoryStorage) MarkTaskAsClosed(ctx context.Context, taskID int) error
 	return errs.ErrNotFound
 }
 
+func (ms *MemoryStorage) DeleteTask(ctx context.Context, taskID int) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	for i, task := range ms.tasks {
+		if task.ID == taskID {
+			ms.tasks = append(ms.tasks[:i], ms.tasks[i+1:]...)
+			return nil
+		}
+	}
+	return nil
+}
+
 func (ms *MemoryStorage) ChangeTaskDeadline(ctx context.Context, taskID int, newDeadline time.Time) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()

@@ -11,6 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	enterTaskNumberText = "Введите номер задачи"
+)
+
 func (b *Bot) handleCommand(ctx context.Context, message *tgbotapi.Message) {
 	logger := b.logger.WithField("chatId", message.Chat.ID).WithField("command", message.Command())
 	role, err := b.storage.GetRole(ctx, message.Chat.ID)
@@ -83,6 +87,8 @@ func (b *Bot) processExecutorCommands(ctx context.Context, message *tgbotapi.Mes
 		b.handleBecomeCommand(ctx, message, message.Command())
 	case getRoleCmd:
 		b.handleGetRoleCommand(ctx, message)
+	case markTaskAsDoneCommand:
+		b.setNextStageWithMessage(ctx, message, domain.MarkTaskAsDone, enterTaskNumberText)
 	case getSelfTasksCmd:
 		b.handleGetSelfTasksCommand(ctx, message)
 	default:
@@ -106,15 +112,15 @@ func (b *Bot) processChiefCommands(ctx context.Context, message *tgbotapi.Messag
 	case getExpiredTasksCmd:
 		b.handleGetExpiredTasksCommand(ctx, message)
 	case addTaskCmd:
-		b.handleAddTaskCommand(ctx, message)
+		b.setNextStageWithMessage(ctx, message, domain.AddTaskName, "Введите название задачи")
 	case getOpenTasks:
 		b.handleGetOpenTasksCommand(ctx, message)
 	case getDoneTasks:
 		b.handleGetDoneTasksCommand(ctx, message)
 	case markTaskAsDoneCommand:
-		b.handleMarkTaskCommands(ctx, message, domain.MarkTaskAsDone)
+		b.setNextStageWithMessage(ctx, message, domain.MarkTaskAsDone, enterTaskNumberText)
 	case changeTaskDeadlineCommand:
-		b.handleChangeTaskDeadlineCommand(ctx, message)
+		b.setNextStageWithMessage(ctx, message, domain.ChangeDeadline, "Введите номер задачи и новый дедлайн в формате \"21 21.12.2024 12:20:00\"")
 
 	default:
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Неизвестная или недоступная команда, попробуйте другую")
@@ -137,7 +143,7 @@ func (b *Bot) processObserverCommands(ctx context.Context, message *tgbotapi.Mes
 	case getExpiredTasksCmd:
 		b.handleGetExpiredTasksCommand(ctx, message)
 	case addTaskCmd:
-		b.handleAddTaskCommand(ctx, message)
+		b.setNextStageWithMessage(ctx, message, domain.AddTaskName, "Введите название задачи")
 	case getOpenTasks:
 		b.handleGetOpenTasksCommand(ctx, message)
 	case getDoneTasks:
@@ -145,11 +151,13 @@ func (b *Bot) processObserverCommands(ctx context.Context, message *tgbotapi.Mes
 	case getClosedTasks:
 		b.handleGetClosedTasksCommand(ctx, message)
 	case markTaskAsClosedCommand:
-		b.handleMarkTaskCommands(ctx, message, domain.MarkTaskAsClosed)
+		b.setNextStageWithMessage(ctx, message, domain.MarkTaskAsClosed, enterTaskNumberText)
 	case markTaskAsDoneCommand:
-		b.handleMarkTaskCommands(ctx, message, domain.MarkTaskAsDone)
+		b.setNextStageWithMessage(ctx, message, domain.MarkTaskAsDone, enterTaskNumberText)
+	case deleteTaskCommand:
+		b.setNextStageWithMessage(ctx, message, domain.DeleteTask, enterTaskNumberText)
 	case changeTaskDeadlineCommand:
-		b.handleChangeTaskDeadlineCommand(ctx, message)
+		b.setNextStageWithMessage(ctx, message, domain.ChangeDeadline, "Введите номер задачи и новый дедлайн в формате \"21 21.12.2024 12:20:00\"")
 	default:
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Неизвестная или недоступная команда, попробуйте другую")
 		if _, err := b.bot.Send(msg); err != nil {
@@ -171,7 +179,7 @@ func (b *Bot) processAdminCommands(ctx context.Context, message *tgbotapi.Messag
 	case getExpiredTasksCmd:
 		b.handleGetExpiredTasksCommand(ctx, message)
 	case addTaskCmd:
-		b.handleAddTaskCommand(ctx, message)
+		b.setNextStageWithMessage(ctx, message, domain.AddTaskName, "Введите название задачи")
 	case getOpenTasks:
 		b.handleGetOpenTasksCommand(ctx, message)
 	case getDoneTasks:
@@ -179,11 +187,13 @@ func (b *Bot) processAdminCommands(ctx context.Context, message *tgbotapi.Messag
 	case getClosedTasks:
 		b.handleGetClosedTasksCommand(ctx, message)
 	case markTaskAsClosedCommand:
-		b.handleMarkTaskCommands(ctx, message, domain.MarkTaskAsClosed)
+		b.setNextStageWithMessage(ctx, message, domain.MarkTaskAsClosed, "Введите номер задачи")
 	case markTaskAsDoneCommand:
-		b.handleMarkTaskCommands(ctx, message, domain.MarkTaskAsDone)
+		b.setNextStageWithMessage(ctx, message, domain.MarkTaskAsDone, "Введите номер задачи")
+	case deleteTaskCommand:
+		b.setNextStageWithMessage(ctx, message, domain.DeleteTask, "Введите номер задачи")
 	case changeTaskDeadlineCommand:
-		b.handleChangeTaskDeadlineCommand(ctx, message)
+		b.setNextStageWithMessage(ctx, message, domain.ChangeDeadline, "Введите номер задачи и новый дедлайн в формате \"21 21.12.2024 12:20:00\"")
 
 	case healthCmd:
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Status Ok!")

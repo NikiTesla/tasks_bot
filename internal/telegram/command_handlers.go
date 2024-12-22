@@ -76,7 +76,7 @@ func (b *Bot) handleBecomeCommand(ctx context.Context, message *tgbotapi.Message
 	responseMsg.Text = "Введите пароль для идентификации"
 }
 
-func (b *Bot) handleGetRoleCommand(ctx context.Context, message *tgbotapi.Message) {
+func (b *Bot) handleGetRoleCommand(_ context.Context, message *tgbotapi.Message) {
 	logger := b.logger.WithField("chatID", message.Chat.ID)
 
 	responseMsg := tgbotapi.NewMessage(message.Chat.ID, "")
@@ -281,56 +281,19 @@ func (b *Bot) handleGetSelfTasksCommand(ctx context.Context, message *tgbotapi.M
 	responseMsg.Text = builder.String()
 }
 
-func (b *Bot) handleAddTaskCommand(ctx context.Context, message *tgbotapi.Message) {
+func (b *Bot) setNextStageWithMessage(ctx context.Context, message *tgbotapi.Message, nextStage domain.Stage, msgText string) {
 	logger := b.logger.WithField("chatID", message.Chat.ID)
 
-	responseMsg := tgbotapi.NewMessage(message.Chat.ID, "")
+	responseMsg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 	defer func() {
 		if _, err := b.bot.Send(responseMsg); err != nil {
 			logger.WithError(err).Error("failed to send response")
 		}
 	}()
 
-	if err := b.storage.SetStage(ctx, message.Chat.ID, domain.AddTaskName); err != nil && !errors.Is(err, errs.ErrNotFound) {
+	if err := b.storage.SetStage(ctx, message.Chat.ID, nextStage); err != nil && !errors.Is(err, errs.ErrNotFound) {
 		logger.WithError(err).Error("b.storage.SetStage")
 		responseMsg.Text = errorReponse
 		return
 	}
-	responseMsg.Text = `Введите название задачи`
-}
-
-func (b *Bot) handleMarkTaskCommands(ctx context.Context, message *tgbotapi.Message, stage domain.Stage) {
-	logger := b.logger.WithField("chatID", message.Chat.ID)
-
-	responseMsg := tgbotapi.NewMessage(message.Chat.ID, "")
-	defer func() {
-		if _, err := b.bot.Send(responseMsg); err != nil {
-			logger.WithError(err).Error("failed to send response")
-		}
-	}()
-
-	if err := b.storage.SetStage(ctx, message.Chat.ID, stage); err != nil && !errors.Is(err, errs.ErrNotFound) {
-		logger.WithError(err).Error("b.storage.SetStage")
-		responseMsg.Text = errorReponse
-		return
-	}
-	responseMsg.Text = `Введите номер задачи`
-}
-
-func (b *Bot) handleChangeTaskDeadlineCommand(ctx context.Context, message *tgbotapi.Message) {
-	logger := b.logger.WithField("chatID", message.Chat.ID)
-
-	responseMsg := tgbotapi.NewMessage(message.Chat.ID, "")
-	defer func() {
-		if _, err := b.bot.Send(responseMsg); err != nil {
-			logger.WithError(err).Error("failed to send response")
-		}
-	}()
-
-	if err := b.storage.SetStage(ctx, message.Chat.ID, domain.ChangeDeadline); err != nil && !errors.Is(err, errs.ErrNotFound) {
-		logger.WithError(err).Error("b.storage.SetStage")
-		responseMsg.Text = errorReponse
-		return
-	}
-	responseMsg.Text = "Введите номер задачи и новый дедлайн в формате \"21 21.12.2024 12:20:00\""
 }
